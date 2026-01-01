@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Webhook Commander</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #36393f; color: white; }
+        .input-field { background-color: #202225; border: 1px solid #2f3136; padding: 10px; border-radius: 5px; width: 100%; color: white; outline: none; }
+        .input-field:focus { border-color: #5865f2; }
+        .label { display: block; margin-bottom: 5px; font-size: 0.8rem; font-weight: bold; color: #b9bbbe; text-transform: uppercase; }
+    </style>
+</head>
+<body class="p-8">
+
+<div class="max-w-4xl mx-auto bg-[#2f3136] p-6 rounded-lg shadow-2xl">
+    <h1 class="text-2xl font-bold mb-6 text-center border-b border-gray-600 pb-4">Webhook Commander</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+            <h2 class="text-blue-400 font-semibold">Config & Main Content</h2>
+            <div>
+                <label class="label">Webhook URL</label>
+                <input type="text" id="webhookUrl" class="input-field" placeholder="https://discord.com/api/webhooks/...">
+            </div>
+            <div>
+                <label class="label">Override Username</label>
+                <input type="text" id="username" class="input-field" placeholder="Custom Bot Name">
+            </div>
+            <div>
+                <label class="label">Avatar URL</label>
+                <input type="text" id="avatarUrl" class="input-field" placeholder="https://image.link/icon.png">
+            </div>
+            <div>
+                <label class="label">Main Message Content</label>
+                <textarea id="content" rows="4" class="input-field" placeholder="Hello world! (Optional if sending embed)"></textarea>
+            </div>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-green-400 font-semibold">Embed Designer</h2>
+            <div class="grid grid-cols-2 gap-2">
+                <div>
+                    <label class="label">Title</label>
+                    <input type="text" id="embedTitle" class="input-field">
+                </div>
+                <div>
+                    <label class="label">Color (Hex)</label>
+                    <input type="color" id="embedColor" class="h-11 w-full bg-[#202225] border-none rounded">
+                </div>
+            </div>
+            <div>
+                <label class="label">Description</label>
+                <textarea id="embedDesc" rows="3" class="input-field"></textarea>
+            </div>
+            <div>
+                <label class="label">Author Name</label>
+                <input type="text" id="authorName" class="input-field">
+            </div>
+            <div>
+                <label class="label">Image URL (Large)</label>
+                <input type="text" id="imageUrl" class="input-field">
+            </div>
+            <div>
+                <label class="label">Footer Text</label>
+                <input type="text" id="footerText" class="input-field">
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-8 flex flex-col items-center">
+        <button onclick="sendWebhook()" id="sendBtn" class="bg-[#5865f2] hover:bg-[#4752c4] text-white font-bold py-3 px-10 rounded transition duration-200">
+            Transmit Signal
+        </button>
+        <p id="status" class="mt-4 text-sm"></p>
+    </div>
+</div>
+
+<script>
+    async function sendWebhook() {
+        const url = document.getElementById('webhookUrl').value;
+        const btn = document.getElementById('sendBtn');
+        const status = document.getElementById('status');
+
+        if (!url) {
+            status.innerText = "❌ Error: Webhook URL is required.";
+            status.className = "mt-4 text-red-400";
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = "Sending...";
+
+        // Construct the Payload
+        const payload = {
+            username: document.getElementById('username').value || undefined,
+            avatar_url: document.getElementById('avatarUrl').value || undefined,
+            content: document.getElementById('content').value || "",
+            embeds: []
+        };
+
+        // Add Embed if any field is filled
+        const embedTitle = document.getElementById('embedTitle').value;
+        const embedDesc = document.getElementById('embedDesc').value;
+        
+        if (embedTitle || embedDesc) {
+            payload.embeds.push({
+                title: embedTitle,
+                description: embedDesc,
+                color: parseInt(document.getElementById('embedColor').value.replace('#', ''), 16),
+                author: { name: document.getElementById('authorName').value },
+                image: { url: document.getElementById('imageUrl').value },
+                footer: { text: document.getElementById('footerText').value },
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                status.innerText = "✅ Success: Message delivered.";
+                status.className = "mt-4 text-green-400";
+            } else {
+                const err = await response.json();
+                status.innerText = `❌ Error: ${err.message}`;
+                status.className = "mt-4 text-red-400";
+            }
+        } catch (error) {
+            status.innerText = "❌ Connection failed.";
+            status.className = "mt-4 text-red-400";
+        } finally {
+            btn.disabled = false;
+            btn.innerText = "Transmit Signal";
+        }
+    }
+</script>
+</body>
+</html>
